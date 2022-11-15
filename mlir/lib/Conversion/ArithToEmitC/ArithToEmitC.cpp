@@ -43,21 +43,88 @@ struct ArithToEmitCConversionPass
 //===----------------------------------------------------------------------===//
 // Straightforward Op Lowerings
 //===----------------------------------------------------------------------===//
-template <typename ArithmeticOp, char c>
-LogicalResult AddIOpLowering(ArithmeticOp op, PatternRewriter &rewriter){
-  std::string formatString = "@0 " + std::string{c} + " @1";
 
-  rewriter.replaceOpWithNewOp<emitc::GenericOp>(
-      op, op->getResult(0).getType(), formatString, op->getOperands());
-  return success();
+namespace {
+  enum COperation {
+    ADD, SUBTRACT, MULTIPLY, DIVIDE, AND, OR, MAX, MIN, NEGATE, SHIFT_LEFT,
+    SHIFT_RIGHT, XOR, TERNARY_OP
+  };
+
+  std::unordered_map<COperation, std::string> opToFormatString{
+      {COperation::ADD, "@0 + @1"},
+      {COperation::SUBTRACT, "@0 - @1"},
+      {COperation::MULTIPLY, "@0 * @1"},
+      {COperation::DIVIDE, "@0 / @1"},
+      {COperation::AND, "@0 & @1"},
+      {COperation::OR, "@0 | @1"},
+      {COperation::MAX, "std::max(@0, @1)"},
+      {COperation::MIN, "std::min(@0, @1)"},
+      {COperation::NEGATE, "-@0"},
+      {COperation::SHIFT_LEFT, "@0 << @1"},
+      {COperation::SHIFT_RIGHT, "@0 >> @1"},
+      {COperation::XOR, "@0 ^ @1"},
+      {COperation::TERNARY_OP, "@ 0 ? @1 : @2"}
+  };
+
+  template <typename ArithmeticOp, COperation cOp>
+  LogicalResult GenericOpLowering(ArithmeticOp op, PatternRewriter &rewriter){
+
+    rewriter.replaceOpWithNewOp<emitc::GenericOp>(
+        op, op->getResult(0).getType(), opToFormatString[cOp], op->getOperands());
+    return success();
+  }
 }
+
 
 //===----------------------------------------------------------------------===//
 // Pattern Population
 //===----------------------------------------------------------------------===//
 void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet &patterns) {
-  patterns.add(AddIOpLowering<arith::AddIOp, '+'>);
-  patterns.add(AddIOpLowering<arith::AddFOp, '+'>);
-  patterns.add(AddIOpLowering<arith::SubIOp, '-'>);
-  patterns.add(AddIOpLowering<arith::SubFOp, '-'>);
+    patterns.add(GenericOpLowering<arith::AddFOp, COperation::ADD>);
+    patterns.add(GenericOpLowering<arith::AddIOp, COperation::ADD>);
+    // TODO: arith.addui_carry (::mlir::arith::AddUICarryOp)
+    patterns.add(GenericOpLowering<arith::AndIOp, COperation::AND>);
+    // TODO: arith.bitcast (::mlir::arith::BitcastOp)
+    // TODO: arith.ceildivsi (::mlir::arith::CeilDivSIOp)
+    // TODO: arith.ceildivui (::mlir::arith::CeilDivUIOp)
+    // TODO: arith.cmpf (::mlir::arith::CmpFOp)
+    // TODO: arith.cmpi (::mlir::arith::CmpIOp)
+    // TODO: arith.constant (::mlir::arith::ConstantOp)
+    patterns.add(GenericOpLowering<arith::DivFOp, COperation::DIVIDE>);
+    patterns.add(GenericOpLowering<arith::DivSIOp, COperation::DIVIDE>);
+    patterns.add(GenericOpLowering<arith::DivUIOp, COperation::DIVIDE>);
+    // TODO: arith.extf (::mlir::arith::ExtFOp)
+    // TODO: arith.extsi (::mlir::arith::ExtSIOp)
+    // TODO: arith.extui (::mlir::arith::ExtUIOp)
+    // TODO: arith.fptosi (::mlir::arith::FPToSIOp)
+    // TODO: arith.fptoui (::mlir::arith::FPToUIOp)
+    // TODO: arith.floordivsi (::mlir::arith::FloorDivSIOp)
+    // TODO: arith.index_cast (::mlir::arith::IndexCastOp)
+    // TODO: arith.index_castui (::mlir::arith::IndexCastUIOp)
+    patterns.add(GenericOpLowering<arith::MaxFOp, COperation::MAX>);
+    patterns.add(GenericOpLowering<arith::MaxSIOp, COperation::MAX>);
+    patterns.add(GenericOpLowering<arith::MaxUIOp, COperation::MAX>);
+    patterns.add(GenericOpLowering<arith::MaxFOp, COperation::MIN>);
+    patterns.add(GenericOpLowering<arith::MaxSIOp, COperation::MIN>);
+    patterns.add(GenericOpLowering<arith::MaxUIOp, COperation::MIN>);
+    patterns.add(GenericOpLowering<arith::MulFOp, COperation::MULTIPLY>);
+    patterns.add(GenericOpLowering<arith::MulIOp, COperation::MULTIPLY>);
+    patterns.add(GenericOpLowering<arith::NegFOp, COperation::NEGATE>);
+    patterns.add(GenericOpLowering<arith::OrIOp, COperation::NEGATE>);
+    // TODO: arith.remf (::mlir::arith::RemFOp)
+    // TODO: arith.remsi (::mlir::arith::RemSIOp)
+    // TODO: arith.remui (::mlir::arith::RemUIOp)
+    // TODO: arith.sitofp (::mlir::arith::SIToFPOp)
+    // TODO: arith.shli (::mlir::arith::ShLIOp)
+    patterns.add(GenericOpLowering<arith::ShLIOp, COperation::SHIFT_LEFT>);
+    // TODO check differenc for negative numbers
+    patterns.add(GenericOpLowering<arith::ShRSIOp, COperation::SHIFT_RIGHT>);
+    patterns.add(GenericOpLowering<arith::ShRUIOp, COperation::SHIFT_RIGHT>);
+    patterns.add(GenericOpLowering<arith::SubFOp, COperation::SUBTRACT>);
+    patterns.add(GenericOpLowering<arith::SubIOp, COperation::SUBTRACT>);
+    // TODO: arith.truncf (::mlir::arith::TruncFOp)
+    // TODO: arith.trunci (::mlir::arith::TruncIOp)
+    // TODO: arith.uitofp (::mlir::arith::UIToFPOp)
+    patterns.add(GenericOpLowering<arith::XOrIOp, COperation::XOR>);
+    patterns.add(GenericOpLowering<arith::SelectOp, COperation::TERNARY_OP>);
 }
