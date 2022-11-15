@@ -57,6 +57,35 @@ def EmitC_ApplyOp : EmitC_Op<"apply", []> {
   let hasVerifier = 1;
 }
 
+def EmitC_GenericOp : EmitC_Op<"generic", []> {
+  let summary = "Generic operation";
+  let description = [{
+    With the `binOp` operation the binary arithmetic operators can be applied to
+                                                              2 operators
+
+    Example:
+
+    ```mlir
+         // Custom form of applying the & operator.
+         %0 = emitc.apply "&"(%arg0) : (i32) -> !emitc.opaque<"int32_t*">
+
+               // Generic form of the same operation.
+               %0 = "emitc.apply"(%arg0) {applicableOperator = "&"}
+                     : (i32) -> !emitc.opaque<"int32_t*">
+
+    ```
+  }];
+  // TODO: Disallow to apply the operator & (address of) to emitc.constant operations.
+  let arguments = (ins
+                      Arg<StrAttr, "the operator to apply">:$applicableOperator,
+                     Variadic<AnyType>:$operands
+  );
+  let results = (outs AnyType:$result);
+  let assemblyFormat = [{
+    $applicableOperator  $operands attr-dict `:` type($operands) `->` type($result)
+  }];
+}
+
 def EmitC_CallOp : EmitC_Op<"call", []> {
   let summary = "Call operation";
   let description = [{

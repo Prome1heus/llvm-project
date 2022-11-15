@@ -400,6 +400,23 @@ static LogicalResult printOperation(CppEmitter &emitter, emitc::CastOp castOp) {
   return success();
 }
 
+static LogicalResult printOperation(CppEmitter &emitter, emitc::GenericOp genericOp) {
+  raw_ostream &os = emitter.ostream();
+  Operation &op = *genericOp.getOperation();
+
+  if (failed(emitter.emitAssignPrefix(op)))
+    return failure();
+
+  size_t numOperands = op.getNumOperands();
+
+  for (size_t i=0; i<numOperands; ++i){
+    if (i) os << " " << genericOp.getApplicableOperator()<< " ";
+    os << emitter.getOrCreateName(op.getOperand(i));
+  }
+
+  return success();
+}
+
 static LogicalResult printOperation(CppEmitter &emitter,
                                     emitc::IncludeOp includeOp) {
   raw_ostream &os = emitter.ostream();
@@ -935,7 +952,7 @@ LogicalResult CppEmitter::emitOperation(Operation &op, bool trailingSemicolon) {
               [&](auto op) { return printOperation(*this, op); })
           // EmitC ops.
           .Case<emitc::ApplyOp, emitc::CallOp, emitc::CastOp, emitc::ConstantOp,
-                emitc::IncludeOp, emitc::VariableOp>(
+                emitc::IncludeOp, emitc::VariableOp, emitc::GenericOp>(
               [&](auto op) { return printOperation(*this, op); })
           // Func ops.
           .Case<func::CallOp, func::ConstantOp, func::FuncOp, func::ReturnOp>(
