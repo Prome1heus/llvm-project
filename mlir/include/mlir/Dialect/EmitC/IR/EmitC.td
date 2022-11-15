@@ -66,23 +66,17 @@ def EmitC_GenericOp : EmitC_Op<"generic", []> {
     Example:
 
     ```mlir
-         // Custom form of applying the & operator.
-         %0 = emitc.apply "&"(%arg0) : (i32) -> !emitc.opaque<"int32_t*">
-
-               // Generic form of the same operation.
-               %0 = "emitc.apply"(%arg0) {applicableOperator = "&"}
-                     : (i32) -> !emitc.opaque<"int32_t*">
-
+         // Custom form of applying the + operator to two operands.
+         %0 = emitc.generic "@1 + @2" %arg0, %arg1 : i32, i32 -> i32
     ```
   }];
-  // TODO: Disallow to apply the operator & (address of) to emitc.constant operations.
   let arguments = (ins
-                      Arg<StrAttr, "the operator to apply">:$applicableOperator,
+                      Arg<StrAttr, "the format string">:$formatString,
                      Variadic<AnyType>:$operands
   );
   let results = (outs AnyType:$result);
   let assemblyFormat = [{
-    $applicableOperator  $operands attr-dict `:` type($operands) `->` type($result)
+    $formatString  $operands attr-dict `:` type($operands) `->` type($result)
   }];
 }
 

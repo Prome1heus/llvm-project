@@ -24,6 +24,7 @@
 #include "llvm/Support/Debug.h"
 #include "llvm/Support/FormatVariadic.h"
 #include <utility>
+#include <regex>
 
 #define DEBUG_TYPE "translate-to-cpp"
 
@@ -407,12 +408,16 @@ static LogicalResult printOperation(CppEmitter &emitter, emitc::GenericOp generi
   if (failed(emitter.emitAssignPrefix(op)))
     return failure();
 
-  size_t numOperands = op.getNumOperands();
+  std::string formatString(genericOp.getFormatString().begin(),
+                           genericOp.getFormatString().end());
+  size_t numOperands = genericOp->getNumOperands();
 
   for (size_t i=0; i<numOperands; ++i){
-    if (i) os << " " << genericOp.getApplicableOperator()<< " ";
-    os << emitter.getOrCreateName(op.getOperand(i));
+    std::regex toReplace("@" + std::to_string(i));
+    std::string operand{emitter.getOrCreateName(op.getOperand(i))};
+    formatString = std::regex_replace(formatString, toReplace, operand);
   }
+  os << formatString;
 
   return success();
 }
