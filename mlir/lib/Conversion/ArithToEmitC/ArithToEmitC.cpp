@@ -43,10 +43,12 @@ struct ArithToEmitCConversionPass
 //===----------------------------------------------------------------------===//
 // Straightforward Op Lowerings
 //===----------------------------------------------------------------------===//
-LogicalResult AddIOpLowering(arith::AddIOp op, PatternRewriter &rewriter){
+template <typename ArithmeticOp, char c>
+LogicalResult AddIOpLowering(ArithmeticOp op, PatternRewriter &rewriter){
+  std::string formatString = "@0 " + std::string{c} + " @1";
+
   rewriter.replaceOpWithNewOp<emitc::GenericOp>(
-      op, op->getResult(0).getType(), "@0 + @1", op->getOperands()
-      );
+      op, op->getResult(0).getType(), formatString, op->getOperands());
   return success();
 }
 
@@ -54,5 +56,8 @@ LogicalResult AddIOpLowering(arith::AddIOp op, PatternRewriter &rewriter){
 // Pattern Population
 //===----------------------------------------------------------------------===//
 void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet &patterns) {
-  patterns.add(AddIOpLowering);
+  patterns.add(AddIOpLowering<arith::AddIOp, '+'>);
+  patterns.add(AddIOpLowering<arith::AddFOp, '+'>);
+  patterns.add(AddIOpLowering<arith::SubIOp, '-'>);
+  patterns.add(AddIOpLowering<arith::SubFOp, '-'>);
 }
