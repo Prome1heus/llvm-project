@@ -69,12 +69,19 @@ namespace {
 
   template <typename ArithmeticOp, COperation cOp>
   LogicalResult GenericOpLowering(ArithmeticOp op, PatternRewriter &rewriter){
-
     rewriter.replaceOpWithNewOp<emitc::GenericOp>(
         op, op->getResult(0).getType(), opToFormatString[cOp], op->getOperands());
     return success();
   }
+
+  template <typename CastOp>
+  LogicalResult CastOpLowering(CastOp op, PatternRewriter &rewriter){
+    rewriter.replaceOpWithNewOp<emitc::CastOp>(
+        op, op->getResult(0).getType(), op->getOperands());
+    return success();
+  }
 }
+
 
 
 //===----------------------------------------------------------------------===//
@@ -92,16 +99,17 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     patterns.add(GenericOpLowering<arith::CmpIOp, COperation::COMPARE_EQUALS>);
     // TODO: arith.constant (::mlir::arith::ConstantOp)
     patterns.add(GenericOpLowering<arith::DivFOp, COperation::DIVIDE>);
+    // TODO: Attention treates leading bit as sign bit
     patterns.add(GenericOpLowering<arith::DivSIOp, COperation::DIVIDE>);
     patterns.add(GenericOpLowering<arith::DivUIOp, COperation::DIVIDE>);
-    // TODO: arith.extf (::mlir::arith::ExtFOp)
-    // TODO: arith.extsi (::mlir::arith::ExtSIOp)
-    // TODO: arith.extui (::mlir::arith::ExtUIOp)
-    // TODO: arith.fptosi (::mlir::arith::FPToSIOp)
-    // TODO: arith.fptoui (::mlir::arith::FPToUIOp)
+    patterns.add(CastOpLowering<arith::ExtFOp>);
+    patterns.add(CastOpLowering<arith::ExtSIOp>);
+    patterns.add(CastOpLowering<arith::ExtUIOp>);
+    patterns.add(CastOpLowering<arith::FPToSIOp>);
+    patterns.add(CastOpLowering<arith::FPToUIOp>);
     // TODO: arith.floordivsi (::mlir::arith::FloorDivSIOp)
-    // TODO: arith.index_cast (::mlir::arith::IndexCastOp)
-    // TODO: arith.index_castui (::mlir::arith::IndexCastUIOp)
+    patterns.add(CastOpLowering<arith::IndexCastOp>);
+    patterns.add(CastOpLowering<arith::IndexCastUIOp>);
     patterns.add(GenericOpLowering<arith::MaxFOp, COperation::MAX>);
     patterns.add(GenericOpLowering<arith::MaxSIOp, COperation::MAX>);
     patterns.add(GenericOpLowering<arith::MaxUIOp, COperation::MAX>);
@@ -117,14 +125,15 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     // TODO: arith.remui (::mlir::arith::RemUIOp)
     // TODO: arith.sitofp (::mlir::arith::SIToFPOp)
     patterns.add(GenericOpLowering<arith::ShLIOp, COperation::SHIFT_LEFT>);
-    // TODO check differenc for negative numbers
+    // TODO check difference for negative numbers
     patterns.add(GenericOpLowering<arith::ShRSIOp, COperation::SHIFT_RIGHT>);
     patterns.add(GenericOpLowering<arith::ShRUIOp, COperation::SHIFT_RIGHT>);
     patterns.add(GenericOpLowering<arith::SubFOp, COperation::SUBTRACT>);
     patterns.add(GenericOpLowering<arith::SubIOp, COperation::SUBTRACT>);
-    // TODO: arith.truncf (::mlir::arith::TruncFOp)
-    // TODO: arith.trunci (::mlir::arith::TruncIOp)
-    // TODO: arith.uitofp (::mlir::arith::UIToFPOp)
+    patterns.add(CastOpLowering<arith::TruncFOp>);
+    // TODO: Probably wrong, top bits are discarded
+    patterns.add(CastOpLowering<arith::TruncIOp>);
+    patterns.add(CastOpLowering<arith::UIToFPOp>);
     patterns.add(GenericOpLowering<arith::XOrIOp, COperation::XOR>);
     patterns.add(GenericOpLowering<arith::SelectOp, COperation::TERNARY_OP>);
 }
