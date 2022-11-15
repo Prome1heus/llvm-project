@@ -47,7 +47,7 @@ struct ArithToEmitCConversionPass
 namespace {
   enum COperation {
     ADD, SUBTRACT, MULTIPLY, DIVIDE, AND, OR, MAX, MIN, NEGATE, SHIFT_LEFT,
-    SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS
+    SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS, CEIL_DIV
   };
 
   std::unordered_map<COperation, std::string> opToFormatString{
@@ -64,7 +64,8 @@ namespace {
       {COperation::SHIFT_RIGHT, "@0 >> @1"},
       {COperation::XOR, "@0 ^ @1"},
       {COperation::TERNARY_OP, "@0 ? @1 : @2"},
-      {COperation::COMPARE_EQUALS, "@0 == @1"}
+      {COperation::COMPARE_EQUALS, "@0 == @1"},
+      {COperation::CEIL_DIV, "@0 / @1 + ((@0 % @1)!=0)"}
   };
 
   template <typename ArithmeticOp, COperation cOp>
@@ -94,10 +95,10 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     patterns.add(GenericOpLowering<arith::AndIOp, COperation::AND>);
     // TODO: arith.bitcast (::mlir::arith::BitcastOp)
     // TODO: arith.ceildivsi (::mlir::arith::CeilDivSIOp)
-    // TODO: arith.ceildivui (::mlir::arith::CeilDivUIOp)
+    patterns.add(GenericOpLowering<CeilDivUIOp, COperation::CEIL_DIV>);
     patterns.add(GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>);
     patterns.add(GenericOpLowering<arith::CmpIOp, COperation::COMPARE_EQUALS>);
-    // TODO: arith.constant (::mlir::arith::ConstantOp)
+    // May remain: arith.constant (::mlir::arith::ConstantOp)
     patterns.add(GenericOpLowering<arith::DivFOp, COperation::DIVIDE>);
     // TODO: Attention treates leading bit as sign bit
     patterns.add(GenericOpLowering<arith::DivSIOp, COperation::DIVIDE>);
@@ -123,7 +124,7 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     // TODO: arith.remf (::mlir::arith::RemFOp)
     // TODO: arith.remsi (::mlir::arith::RemSIOp)
     // TODO: arith.remui (::mlir::arith::RemUIOp)
-    // TODO: arith.sitofp (::mlir::arith::SIToFPOp)
+    patterns.add(CastOpLowering<arith::SIToFPOp>);
     patterns.add(GenericOpLowering<arith::ShLIOp, COperation::SHIFT_LEFT>);
     // TODO check difference for negative numbers
     patterns.add(GenericOpLowering<arith::ShRSIOp, COperation::SHIFT_RIGHT>);
