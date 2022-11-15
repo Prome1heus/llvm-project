@@ -46,8 +46,8 @@ struct ArithToEmitCConversionPass
 
 namespace {
   enum COperation {
-    ADD, SUBTRACT, MULTIPLY, DIVIDE, AND, OR, MAX, MIN, NEGATE, SHIFT_LEFT,
-    SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS, CEIL_DIV
+    ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO, FMOD, AND, OR, MAX, MIN, NEGATE,
+    SHIFT_LEFT, SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS, CEIL_DIV, FLOOR_DIV
   };
 
   std::unordered_map<COperation, std::string> opToFormatString{
@@ -55,6 +55,8 @@ namespace {
       {COperation::SUBTRACT, "@0 - @1"},
       {COperation::MULTIPLY, "@0 * @1"},
       {COperation::DIVIDE, "@0 / @1"},
+      {COperation::MODULO, "@0 % @1"},
+      {COperation::FMOD, "fmod(@0, @1)"},
       {COperation::AND, "@0 & @1"},
       {COperation::OR, "@0 | @1"},
       {COperation::MAX, "@0 > @1 ? @0 : @1"},
@@ -65,7 +67,8 @@ namespace {
       {COperation::XOR, "@0 ^ @1"},
       {COperation::TERNARY_OP, "@0 ? @1 : @2"},
       {COperation::COMPARE_EQUALS, "@0 == @1"},
-      {COperation::CEIL_DIV, "@0 / @1 + ((@0 % @1)!=0)"}
+      {COperation::CEIL_DIV, "@0 / @1 + ((@0 % @1)>0)"},
+      {COperation::FLOOR_DIV, "@0 / @1 - ((@0 % @1 < 0)"},
   };
 
   template <typename ArithmeticOp, COperation cOp>
@@ -94,13 +97,13 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     // TODO: arith.addui_carry (::mlir::arith::AddUICarryOp)
     patterns.add(GenericOpLowering<arith::AndIOp, COperation::AND>);
     // TODO: arith.bitcast (::mlir::arith::BitcastOp)
-    // TODO: arith.ceildivsi (::mlir::arith::CeilDivSIOp)
+    patterns.add(GenericOpLowering<arith::CeilDivSIOp, COperation::CEIL_DIV>);
     patterns.add(GenericOpLowering<CeilDivUIOp, COperation::CEIL_DIV>);
     patterns.add(GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>);
     patterns.add(GenericOpLowering<arith::CmpIOp, COperation::COMPARE_EQUALS>);
     // May remain: arith.constant (::mlir::arith::ConstantOp)
     patterns.add(GenericOpLowering<arith::DivFOp, COperation::DIVIDE>);
-    // TODO: Attention treates leading bit as sign bit
+    // TODO: Attention treats leading bit as sign bit
     patterns.add(GenericOpLowering<arith::DivSIOp, COperation::DIVIDE>);
     patterns.add(GenericOpLowering<arith::DivUIOp, COperation::DIVIDE>);
     patterns.add(CastOpLowering<arith::ExtFOp>);
@@ -108,7 +111,7 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     patterns.add(CastOpLowering<arith::ExtUIOp>);
     patterns.add(CastOpLowering<arith::FPToSIOp>);
     patterns.add(CastOpLowering<arith::FPToUIOp>);
-    // TODO: arith.floordivsi (::mlir::arith::FloorDivSIOp)
+    patterns.add(GenericOpLowering<arith::FloorDivSIOp, COperation::FLOOR_DIV>);
     patterns.add(CastOpLowering<arith::IndexCastOp>);
     patterns.add(CastOpLowering<arith::IndexCastUIOp>);
     patterns.add(GenericOpLowering<arith::MaxFOp, COperation::MAX>);
@@ -121,9 +124,10 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     patterns.add(GenericOpLowering<arith::MulIOp, COperation::MULTIPLY>);
     patterns.add(GenericOpLowering<arith::NegFOp, COperation::NEGATE>);
     patterns.add(GenericOpLowering<arith::OrIOp, COperation::NEGATE>);
-    // TODO: arith.remf (::mlir::arith::RemFOp)
+    // TODO: Check for correctness and include header
+    patterns.add(GenericOpLowering<arith::RemFOp, COperation::FMOD>);
     // TODO: arith.remsi (::mlir::arith::RemSIOp)
-    // TODO: arith.remui (::mlir::arith::RemUIOp)
+    patterns.add(GenericOpLowering<arith::RemUIOp, COperation::MODULO>);
     patterns.add(CastOpLowering<arith::SIToFPOp>);
     patterns.add(GenericOpLowering<arith::ShLIOp, COperation::SHIFT_LEFT>);
     // TODO check difference for negative numbers
