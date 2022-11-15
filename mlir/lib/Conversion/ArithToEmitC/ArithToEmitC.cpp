@@ -47,7 +47,7 @@ struct ArithToEmitCConversionPass
 namespace {
   enum COperation {
     ADD, SUBTRACT, MULTIPLY, DIVIDE, AND, OR, MAX, MIN, NEGATE, SHIFT_LEFT,
-    SHIFT_RIGHT, XOR, TERNARY_OP
+    SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS
   };
 
   std::unordered_map<COperation, std::string> opToFormatString{
@@ -63,7 +63,8 @@ namespace {
       {COperation::SHIFT_LEFT, "@0 << @1"},
       {COperation::SHIFT_RIGHT, "@0 >> @1"},
       {COperation::XOR, "@0 ^ @1"},
-      {COperation::TERNARY_OP, "@ 0 ? @1 : @2"}
+      {COperation::TERNARY_OP, "@0 ? @1 : @2"},
+      {COperation::COMPARE_EQUALS, "@0 == @1"}
   };
 
   template <typename ArithmeticOp, COperation cOp>
@@ -87,8 +88,8 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     // TODO: arith.bitcast (::mlir::arith::BitcastOp)
     // TODO: arith.ceildivsi (::mlir::arith::CeilDivSIOp)
     // TODO: arith.ceildivui (::mlir::arith::CeilDivUIOp)
-    // TODO: arith.cmpf (::mlir::arith::CmpFOp)
-    // TODO: arith.cmpi (::mlir::arith::CmpIOp)
+    patterns.add(GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>);
+    patterns.add(GenericOpLowering<arith::CmpIOp, COperation::COMPARE_EQUALS>);
     // TODO: arith.constant (::mlir::arith::ConstantOp)
     patterns.add(GenericOpLowering<arith::DivFOp, COperation::DIVIDE>);
     patterns.add(GenericOpLowering<arith::DivSIOp, COperation::DIVIDE>);
@@ -115,7 +116,6 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     // TODO: arith.remsi (::mlir::arith::RemSIOp)
     // TODO: arith.remui (::mlir::arith::RemUIOp)
     // TODO: arith.sitofp (::mlir::arith::SIToFPOp)
-    // TODO: arith.shli (::mlir::arith::ShLIOp)
     patterns.add(GenericOpLowering<arith::ShLIOp, COperation::SHIFT_LEFT>);
     // TODO check differenc for negative numbers
     patterns.add(GenericOpLowering<arith::ShRSIOp, COperation::SHIFT_RIGHT>);
