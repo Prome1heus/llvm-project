@@ -19,14 +19,28 @@ func.func @testGeneric(f32, f32, i32, i32, ui32, ui32) -> (f32, i32) {
   %6 = arith.divsi %arg2, %arg3 : i32
 // CHECK: = emitc.generic "@0 / @1" %arg2, %arg3 : i32, i32 -> i32
   %7 = arith.divui %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 / @1 - ((@0 % @1 < 0)" %arg2, %arg3 : i32, i32 -> i32
+  %8 = arith.floordivsi %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 > @1 ? @0 : @1" %arg0, %arg1 : f32, f32 -> f32
+  %9 = arith.maxf %arg0, %arg1 : f32
+// CHECK: = emitc.generic "@0 > @1 ? @0 : @1" %arg2, %arg3 : i32, i32 -> i32
+  %10 = arith.maxsi %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 > @1 ? @0 : @1" %arg2, %arg3 : i32, i32 -> i32
+  %11 = arith.maxui %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 < @1 ? @0 : @1" %arg0, %arg1 : f32, f32 -> f32
+  %12 = arith.minf %arg0, %arg1 : f32
+// CHECK: = emitc.generic "@0 < @1 ? @0 : @1" %arg2, %arg3 : i32, i32 -> i32
+  %13 = arith.minsi %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 < @1 ? @0 : @1" %arg2, %arg3 : i32, i32 -> i32
+  %14 = arith.minui %arg2, %arg3 : i32
 
   func.return %arg0, %arg2: f32, i32
 }
 
 
 // CHECK-LABEL: @testCast
-func.func @testCast(f32, f32, i32, i32, ui32, ui32) -> (f32, i32) {
-^bb0(%arg0: f32, %arg1: f32, %arg2: i32, %arg3: i32, %arg4: ui32, %arg5: ui32):
+func.func @testCast(f32, f32, i32, i32, ui32, ui32, index) -> (f32, i32) {
+^bb0(%arg0: f32, %arg1: f32, %arg2: i32, %arg3: i32, %arg4: ui32, %arg5: ui32, %arg6: index):
 // CHECK: = emitc.cast %arg0 : f32 to f64
   %0 = arith.extf %arg0 : f32 to f64
 // CHECK: = emitc.cast %arg2 : i32 to i64
@@ -37,6 +51,10 @@ func.func @testCast(f32, f32, i32, i32, ui32, ui32) -> (f32, i32) {
   %3 = arith.fptosi %arg0 : f32 to i32
 // CHECK: = emitc.cast %arg0 : f32 to i32
   %4 = arith.fptoui %arg0 : f32 to i32
+// CHECK: = emitc.cast %arg6 : index to i32
+  %5 = arith.index_cast %arg6 : index to i32
+// CHECK: = emitc.cast %arg6 : index to i32
+  %6 = arith.index_castui %arg6 : index to i32
 
   func.return %arg0, %arg2: f32, i32
 }
