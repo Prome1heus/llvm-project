@@ -13,6 +13,30 @@ func.func @testGeneric(f32, f32, i32, i32, ui32, ui32) -> (f32, i32) {
   %3 = arith.ceildivsi %arg2, %arg3 : i32
 // CHECK: = emitc.generic "@0 / @1 + ((@0 % @1)>0)" %arg2, %arg3 : i32, i32 -> i32
   %4 = arith.ceildivui %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 / @1" %arg0, %arg1 : f32, f32 -> f32
+  %5 = arith.divf %arg0, %arg1 : f32
+// CHECK: = emitc.generic "@0 / @1" %arg2, %arg3 : i32, i32 -> i32
+  %6 = arith.divsi %arg2, %arg3 : i32
+// CHECK: = emitc.generic "@0 / @1" %arg2, %arg3 : i32, i32 -> i32
+  %7 = arith.divui %arg2, %arg3 : i32
+
+  func.return %arg0, %arg2: f32, i32
+}
+
+
+// CHECK-LABEL: @testCast
+func.func @testCast(f32, f32, i32, i32, ui32, ui32) -> (f32, i32) {
+^bb0(%arg0: f32, %arg1: f32, %arg2: i32, %arg3: i32, %arg4: ui32, %arg5: ui32):
+// CHECK: = emitc.cast %arg0 : f32 to f64
+  %0 = arith.extf %arg0 : f32 to f64
+// CHECK: = emitc.cast %arg2 : i32 to i64
+  %1 = arith.extsi %arg2 : i32 to i64
+// CHECK: = emitc.cast %arg2 : i32 to i64
+  %2 = arith.extui %arg2 : i32 to i64
+// CHECK: = emitc.cast %arg0 : f32 to i32
+  %3 = arith.fptosi %arg0 : f32 to i32
+// CHECK: = emitc.cast %arg0 : f32 to i32
+  %4 = arith.fptoui %arg0 : f32 to i32
 
   func.return %arg0, %arg2: f32, i32
 }
