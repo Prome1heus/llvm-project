@@ -47,7 +47,9 @@ struct ArithToEmitCConversionPass
 namespace {
   enum COperation {
     ADD, SUBTRACT, MULTIPLY, DIVIDE, MODULO, FMOD, AND, OR, MAX, MIN, NEGATE,
-    SHIFT_LEFT, SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS, CEIL_DIV, FLOOR_DIV
+    SHIFT_LEFT, SHIFT_RIGHT, XOR, TERNARY_OP, COMPARE_EQUALS, COMPARE_NOT_EQUALS,
+    COMPARE_LESS, COMPARE_GREATER, COMPARE_LESS_EQ, COMPARE_GREATER_EQ,
+    CEIL_DIV, FLOOR_DIV
   };
 
   std::unordered_map<COperation, std::string> opToFormatString{
@@ -67,6 +69,11 @@ namespace {
       {COperation::XOR, "@0 ^ @1"},
       {COperation::TERNARY_OP, "@0 ? @1 : @2"},
       {COperation::COMPARE_EQUALS, "@0 == @1"},
+      {COperation::COMPARE_NOT_EQUALS, "@0 != @1"},
+      {COperation::COMPARE_LESS, "@0 < @1"},
+      {COperation::COMPARE_LESS_EQ, "@0 <= @1"},
+      {COperation::COMPARE_GREATER, "@0 > @1"},
+      {COperation::COMPARE_GREATER_EQ, "@0 >= @1"},
       {COperation::CEIL_DIV, "@0 / @1 + ((@0 % @1)>0)"},
       {COperation::FLOOR_DIV, "@0 / @1 - ((@0 % @1 < 0)"},
   };
@@ -84,6 +91,48 @@ namespace {
         op, op->getResult(0).getType(), op->getOperands());
     return success();
   }
+
+  LogicalResult CompareFOpLowering(arith::CmpFOp op, PatternRewriter &rewriter){
+    switch (op.getPredicate()){
+    case arith::CmpFPredicate::OEQ:
+        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>(op, rewriter);
+      case arith::CmpFPredicate::ONE:
+        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_NOT_EQUALS>(op, rewriter);
+      case arith::CmpFPredicate::OLT:
+        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_LESS>(op, rewriter);
+      case arith::CmpFPredicate::OLE:
+        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_LESS_EQ>(op, rewriter);
+      case arith::CmpFPredicate::OGT:
+        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_GREATER>(op, rewriter);
+      case arith::CmpFPredicate::OGE:
+        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_GREATER_EQ>(op, rewriter);
+      default:
+        failure();
+    }
+  }
+
+  LogicalResult CompareIOpLowering(arith::CmpIOp op, PatternRewriter &rewriter){
+    switch (op.getPredicate()){
+    case arith::CmpIPredicate::eq:
+      return GenericOpLowering<arith::CmpIOp, COperation::COMPARE_EQUALS>(op, rewriter);
+    case arith::CmpIPredicate::ne:
+      return GenericOpLowering<arith::CmpIOp, COperation::COMPARE_NOT_EQUALS>(op, rewriter);
+    case arith::CmpIPredicate::slt:
+    case arith::CmpIPredicate::ult:
+      return GenericOpLowering<arith::CmpIOp, COperation::COMPARE_LESS>(op, rewriter);
+    case arith::CmpIPredicate::sle:
+    case arith::CmpIPredicate::ule:
+      return GenericOpLowering<arith::CmpIOp, COperation::COMPARE_LESS_EQ>(op, rewriter);
+    case arith::CmpIPredicate::sgt:
+    case arith::CmpIPredicate::ugt:
+      return GenericOpLowering<arith::CmpIOp, COperation::COMPARE_GREATER>(op, rewriter);
+    case arith::CmpIPredicate::sge:
+    case arith::CmpIPredicate::uge:
+      return GenericOpLowering<arith::CmpIOp, COperation::COMPARE_GREATER_EQ>(op, rewriter);
+    default:
+      failure();
+    }
+  }
 }
 
 
@@ -99,8 +148,8 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     // TODO: arith.bitcast (::mlir::arith::BitcastOp)
     patterns.add(GenericOpLowering<arith::CeilDivSIOp, COperation::CEIL_DIV>);
     patterns.add(GenericOpLowering<CeilDivUIOp, COperation::CEIL_DIV>);
-    patterns.add(GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>);
-    patterns.add(GenericOpLowering<arith::CmpIOp, COperation::COMPARE_EQUALS>);
+    patterns.add(CompareFOpLowering);
+    patterns.add(CompareIOpLowering);
     // May remain: arith.constant (::mlir::arith::ConstantOp)
     patterns.add(GenericOpLowering<arith::DivFOp, COperation::DIVIDE>);
     // TODO: Attention treats leading bit as sign bit
