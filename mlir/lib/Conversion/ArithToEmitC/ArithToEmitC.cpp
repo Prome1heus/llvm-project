@@ -95,19 +95,25 @@ namespace {
   LogicalResult CompareFOpLowering(arith::CmpFOp op, PatternRewriter &rewriter){
     switch (op.getPredicate()){
     case arith::CmpFPredicate::OEQ:
-        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>(op, rewriter);
-      case arith::CmpFPredicate::ONE:
-        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_NOT_EQUALS>(op, rewriter);
-      case arith::CmpFPredicate::OLT:
-        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_LESS>(op, rewriter);
-      case arith::CmpFPredicate::OLE:
-        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_LESS_EQ>(op, rewriter);
-      case arith::CmpFPredicate::OGT:
-        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_GREATER>(op, rewriter);
-      case arith::CmpFPredicate::OGE:
-        return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_GREATER_EQ>(op, rewriter);
-      default:
-        failure();
+    case arith::CmpFPredicate::UEQ:
+      return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_EQUALS>(op, rewriter);
+    case arith::CmpFPredicate::ONE:
+    case arith::CmpFPredicate::UNE:
+      return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_NOT_EQUALS>(op, rewriter);
+    case arith::CmpFPredicate::OLT:
+    case arith::CmpFPredicate::ULT:
+      return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_LESS>(op, rewriter);
+    case arith::CmpFPredicate::OLE:
+    case arith::CmpFPredicate::ULE:
+      return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_LESS_EQ>(op, rewriter);
+    case arith::CmpFPredicate::OGT:
+    case arith::CmpFPredicate::UGT:
+      return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_GREATER>(op, rewriter);
+    case arith::CmpFPredicate::OGE:
+    case arith::CmpFPredicate::UGE:
+      return GenericOpLowering<arith::CmpFOp, COperation::COMPARE_GREATER_EQ>(op, rewriter);
+    default:
+      failure();
     }
   }
 
