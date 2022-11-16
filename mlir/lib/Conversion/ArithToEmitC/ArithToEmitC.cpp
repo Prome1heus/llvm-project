@@ -166,13 +166,13 @@ void mlir::arith::populateArithToEmitCConversionPatterns(mlir::RewritePatternSet
     patterns.add(GenericOpLowering<arith::MaxFOp, COperation::MAX>);
     patterns.add(GenericOpLowering<arith::MaxSIOp, COperation::MAX>);
     patterns.add(GenericOpLowering<arith::MaxUIOp, COperation::MAX>);
-    patterns.add(GenericOpLowering<arith::MaxFOp, COperation::MIN>);
-    patterns.add(GenericOpLowering<arith::MaxSIOp, COperation::MIN>);
-    patterns.add(GenericOpLowering<arith::MaxUIOp, COperation::MIN>);
+    patterns.add(GenericOpLowering<arith::MinFOp, COperation::MIN>);
+    patterns.add(GenericOpLowering<arith::MinSIOp, COperation::MIN>);
+    patterns.add(GenericOpLowering<arith::MinUIOp, COperation::MIN>);
     patterns.add(GenericOpLowering<arith::MulFOp, COperation::MULTIPLY>);
     patterns.add(GenericOpLowering<arith::MulIOp, COperation::MULTIPLY>);
     patterns.add(GenericOpLowering<arith::NegFOp, COperation::NEGATE>);
-    patterns.add(GenericOpLowering<arith::OrIOp, COperation::NEGATE>);
+    patterns.add(GenericOpLowering<arith::OrIOp, COperation::OR>);
     // TODO: Check for correctness and include header
     patterns.add(GenericOpLowering<arith::RemFOp, COperation::FMOD>);
     // TODO: arith.remsi (::mlir::arith::RemSIOp)
